@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { encodeState, decodeState, UserProfile, LinkItem } from '../src/lib/encoder';
-import { shortenUrl } from '../src/lib/shortener';
 import { getBrandMeta } from '../src/lib/brandDetector';
 import { QRCodeSVG } from 'qrcode.react';
 import { 
@@ -32,9 +31,7 @@ const DEFAULT_PROFILE: UserProfile = {
 export default function TripTreeStudio() {
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [isViewingMode, setIsViewingMode] = useState<boolean>(false);
-  const [shortenedUrl, setShortenedUrl] = useState<string>('');
   const [rawUrl, setRawUrl] = useState<string>('');
-  const [isPublishing, setIsPublishing] = useState<boolean>(false);
   const [showPublishModal, setShowPublishModal] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
 
@@ -77,17 +74,18 @@ export default function TripTreeStudio() {
     }));
   };
 
-  // Publish and generate short link
-  const handlePublish = async () => {
-    setIsPublishing(true);
-    const hashData = encodeState(profile);
-    const fullUrl = `${window.location.origin}${window.location.pathname}#data=${hashData}`;
-    setRawUrl(fullUrl);
+  // Instant Publish (Clean URL Generation without shortener)
+  const handlePublish = () => {
+    const rawHandle = profile.name || 'user';
+    const userSlug = rawHandle
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9_-]/g, '');
 
-    // Call TinyURL/Is.gd API
-    const cleanShortUrl = await shortenUrl(fullUrl);
-    setShortenedUrl(cleanShortUrl);
-    setIsPublishing(false);
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://triptree.ujwalsharma.space';
+    const finalUrl = `${baseUrl}/${userSlug}`;
+
+    setRawUrl(finalUrl);
     setShowPublishModal(true);
   };
 
@@ -157,10 +155,9 @@ export default function TripTreeStudio() {
         </div>
         <button
           onClick={handlePublish}
-          disabled={isPublishing}
-          className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2"
+          className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2 cursor-pointer"
         >
-          {isPublishing ? 'Generating...' : 'Publish & Share'}
+          Publish & Share
           <Share2 className="w-4 h-4" />
         </button>
       </header>
@@ -191,7 +188,7 @@ export default function TripTreeStudio() {
               />
               <input
                 type="url"
-                placeholder="Avatar Image URL"
+                placeholder="Avatar Image URL(Add a publicly accessible image URL)"
                 value={profile.avatarUrl}
                 onChange={(e) => setProfile({ ...profile, avatarUrl: e.target.value })}
                 className="w-full bg-zinc-800/50 border border-zinc-700/60 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500"
@@ -215,7 +212,7 @@ export default function TripTreeStudio() {
                   key={theme.id}
                   type="button"
                   onClick={() => setProfile({ ...profile, themeId: theme.id as UserProfile['themeId'] })}
-                  className={`p-3 rounded-xl border text-xs font-bold transition-all text-center ${
+                  className={`p-3 rounded-xl border text-xs font-bold transition-all text-center cursor-pointer ${
                     profile.themeId === theme.id
                       ? 'border-indigo-500 bg-indigo-500/10 text-indigo-400 shadow-sm'
                       : 'border-zinc-800 bg-zinc-800/40 text-zinc-400 hover:border-zinc-700'
@@ -235,7 +232,7 @@ export default function TripTreeStudio() {
               </h2>
               <button
                 onClick={addLink}
-                className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-xs font-medium rounded-lg flex items-center gap-1.5"
+                className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-xs font-medium rounded-lg flex items-center gap-1.5 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" /> Add Link
               </button>
@@ -251,7 +248,7 @@ export default function TripTreeStudio() {
                       </span>
                       <button
                         onClick={() => removeLink(link.id)}
-                        className="text-zinc-500 hover:text-red-400 p-1 transition"
+                        className="text-zinc-500 hover:text-red-400 p-1 transition cursor-pointer"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -315,22 +312,22 @@ export default function TripTreeStudio() {
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full p-6 space-y-5 text-center">
             <h3 className="text-xl font-bold">Your TripTree Link is Ready! 🎉</h3>
             <div className="bg-zinc-950 p-3 rounded-xl border border-zinc-800 text-xs font-mono break-all text-indigo-400 flex items-center justify-between">
-              <span>{shortenedUrl || rawUrl}</span>
+              <span>{rawUrl}</span>
               <button
-                onClick={() => copyToClipboard(shortenedUrl || rawUrl)}
-                className="p-1.5 hover:bg-zinc-800 rounded text-zinc-300 transition"
+                onClick={() => copyToClipboard(rawUrl)}
+                className="p-1.5 hover:bg-zinc-800 rounded text-zinc-300 transition cursor-pointer"
               >
                 {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
               </button>
             </div>
 
             <div className="flex justify-center p-3 bg-white rounded-xl max-w-[160px] mx-auto">
-              <QRCodeSVG value={shortenedUrl || rawUrl} size={140} />
+              <QRCodeSVG value={rawUrl} size={140} />
             </div>
 
             <button
               onClick={() => setShowPublishModal(false)}
-              className="w-full py-2.5 bg-zinc-800 hover:bg-zinc-700 text-sm font-semibold rounded-xl transition"
+              className="w-full py-2.5 bg-zinc-800 hover:bg-zinc-700 text-sm font-semibold rounded-xl transition cursor-pointer"
             >
               Close Studio
             </button>
