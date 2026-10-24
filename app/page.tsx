@@ -13,7 +13,8 @@ import {
   Check, 
   Layout, 
   User, 
-  Link as LinkIcon 
+  Link as LinkIcon,
+  Download  
 } from 'lucide-react';
 
 const DEFAULT_PROFILE: UserProfile = {
@@ -93,6 +94,24 @@ export default function TripTreeStudio() {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Download QR Code as SVG file
+  const downloadQRCode = () => {
+    const svgElement = document.getElementById('triptree-qr-code');
+    if (!svgElement) return;
+
+    const svgData = new XMLSerializer().serializeToString(svgElement);
+    const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'triptree-qr-code.svg';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   // Published Page Viewer (When a user visits a generated hash link)
@@ -188,7 +207,7 @@ export default function TripTreeStudio() {
               />
               <input
                 type="url"
-                placeholder="Avatar Image URL(Add a publicly accessible image URL)"
+                placeholder="Avatar Image URL (Add a publicly accessible image URL)"
                 value={profile.avatarUrl}
                 onChange={(e) => setProfile({ ...profile, avatarUrl: e.target.value })}
                 className="w-full bg-zinc-800/50 border border-zinc-700/60 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500"
@@ -311,18 +330,32 @@ export default function TripTreeStudio() {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full p-6 space-y-5 text-center">
             <h3 className="text-xl font-bold">Your TripTree Link is Ready! 🎉</h3>
+
+            {/* Link Copy Box */}
             <div className="bg-zinc-950 p-3 rounded-xl border border-zinc-800 text-xs font-mono break-all text-indigo-400 flex items-center justify-between">
               <span>{rawUrl}</span>
               <button
                 onClick={() => copyToClipboard(rawUrl)}
                 className="p-1.5 hover:bg-zinc-800 rounded text-zinc-300 transition cursor-pointer"
+                title="Copy Link"
               >
                 {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
               </button>
             </div>
 
-            <div className="flex justify-center p-3 bg-white rounded-xl max-w-[160px] mx-auto">
-              <QRCodeSVG value={rawUrl} size={140} />
+            {/* QR Code Container & Download */}
+            <div className="flex flex-col items-center gap-3">
+              <div className="flex justify-center p-3 bg-white rounded-xl max-w-[160px] mx-auto">
+                <QRCodeSVG id="triptree-qr-code" value={rawUrl} size={140} />
+              </div>
+
+              <button
+                onClick={downloadQRCode}
+                className="inline-flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-medium cursor-pointer transition"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Download QR Code (.svg)
+              </button>
             </div>
 
             <button
