@@ -1,25 +1,33 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
-}
+  --font-mono: var(--font-geist-mono);
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Brand colors, taken from the TripTree logo */
+  --color-sun-300: #ffd56b;
+  --color-sun-400: #ffc24d;
+  --color-sun-500: #ff9a3c;
+  --color-grape-500: #7c5cff;
+  --color-grape-600: #6a45f5;
+  --color-rose-brand: #f06ba8;
+  --color-ink: #1b1b1f;
+  --color-paper: #f4f3ef;
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+}
+
+/* Purple-to-pink text, matching the "T" in the logo */
+.text-brand-gradient {
+  background-image: linear-gradient(90deg, var(--color-grape-500), var(--color-rose-brand));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.bg-sun-gradient {
+  background-image: linear-gradient(135deg, var(--color-sun-300), var(--color-sun-500));
 }

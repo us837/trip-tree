@@ -1,0 +1,11 @@
+# Cloudflare Pages config. `name` must match your Pages project name.
+name = "trip-tree"
+pages_build_output_dir = "out"
+compatibility_date = "2025-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "triptree"
+# Replace with the id printed by `npx wrangler d1 create triptree`
+database_id = "f2a39178-e646-4562-ad52-5bc2c1b9eee6"
+migrations_dir = "migrations"
