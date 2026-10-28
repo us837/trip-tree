@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TripTree
 
-## Getting Started
+A link-in-bio app. Users sign in with Google, claim a username and get a page at
+`triptree.ujwalsharma.space/<username>` with themes, a QR code and click analytics.
 
-First, run the development server:
+Runs entirely on Cloudflare's free tier:
+
+| Part | What | Where |
+| --- | --- | --- |
+| Site, login, dashboard | Next.js static export (`out/`) | `app/`, `components/` |
+| API + public pages | Cloudflare Pages Functions | `functions/`, `src/server/` |
+| Database | Cloudflare D1 (SQLite) | `migrations/` |
+
+`functions/[slug].ts` server-renders public profiles with the same `ProfileView`
+component the dashboard preview uses. `public/_routes.json` keeps static pages and
+`/_next/*` assets from invoking Functions, so they don't count against the free
+request quota.
+
+## Local development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .dev.vars.example .dev.vars        # then fill in Google OAuth credentials
+npm run db:migrate:local
+npm run preview                        # builds, then serves site + API on http://localhost:8788
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`npm run dev` still works for UI-only work on the marketing pages, but `/api/*`,
+login and public profiles need `npm run preview`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Checks: `npm run lint`, `npx tsc --noEmit`, `npm run typecheck:functions`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## One-time production setup
 
-## Learn More
+1. **D1 database**
+   ```bash
+   npx wrangler login
+   npx wrangler d1 create triptree      # copy the database_id into wrangler.toml
+   npm run db:migrate:remote
+   ```
+2. **Google OAuth**: in Google Cloud Console → APIs & Services → Credentials, create an
+   *OAuth client ID* (Web application) with these authorised redirect URIs:
+   - `https://triptree.ujwalsharma.space/api/auth/callback`
+   - `http://localhost:8788/api/auth/callback`
+3. **Pages project**: in Cloudflare → Workers & Pages → your project → Settings:
+   - Build command `npm run build`, output directory `out`.
+   - Variables and Secrets: add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (as secrets).
+   - `name` in `wrangler.toml` must match the Pages project name.
+4. **Domain**: Custom domains → add `triptree.ujwalsharma.space`, then create the CNAME
+   it shows you at Hostinger DNS (pointing to `<project>.pages.dev`).
 
-To learn more about Next.js, take a look at the following resources:
+## Plans
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Limits live in `src/lib/plans.ts`. Payments are not wired up yet
+(`PAYMENTS_ENABLED = false`). To give someone Pro by hand:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npx wrangler d1 execute triptree --remote \
+  --command "UPDATE users SET plan='pro', plan_expires_at=NULL WHERE email='someone@example.com'"
+```
